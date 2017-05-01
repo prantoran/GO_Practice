@@ -5,8 +5,15 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
+)
+
+const (
+	//TITLEDELAY is multiplier to time.sleep of title
+	TITLEDELAY = 2
 )
 
 func main() {
@@ -40,19 +47,27 @@ func run() error {
 		return fmt.Errorf("could not draw title: %v", err)
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(TITLEDELAY * time.Second)
 
 	s, err := NewScene(r)
 	if err != nil {
-		return fmt.Errorf("could not draw background: %v", err)
+		return fmt.Errorf("could not create scene: %v", err)
 	}
-	defer s.destroy()
+	defer s.Destroy()
 
-	s.paint(r)
+	//quit := make(chan struct{})
+	//defer close(quit)
 
-	time.Sleep(5 * time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	return nil
+	select {
+	case err := <-s.Run(ctx, r):
+		return fmt.Errorf("could not paint scene: %v", err)
+	case <-time.After(5 * time.Second):
+		return nil
+	}
+
 }
 
 func drawTitle(r *sdl.Renderer) error {
