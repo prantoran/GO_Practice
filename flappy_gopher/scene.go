@@ -7,23 +7,25 @@ import (
 	img "github.com/veandco/go-sdl2/sdl_image"
 )
 
-type scene struct {
-	bg *sdl.Texture
+//Scene is a struct to represent a single frame
+type Scene struct {
+	Bg *sdl.Texture
 }
 
-func newScene(r *sdl.Renderer) (*scene, error) {
+//NewScene returns a scene structure by loading a background png and assigning the texture to the scene
+func NewScene(r *sdl.Renderer) (*Scene, error) {
 	//t = texture
 	t, err := img.LoadTexture(r, "res/imgs/background0.png")
 	if err != nil {
 		return nil, fmt.Errorf("could not load background image: %v", err)
 	}
 
-	return &scene{bg: t}, nil
+	return &Scene{Bg: t}, nil
 }
 
-func (s *scene) paint(r *sdl.Renderer) error {
+func (s *Scene) paint(r *sdl.Renderer) error {
 	r.Clear()
-	if err := r.Copy(s.bg, nil, nil); err != nil {
+	if err := r.Copy(s.Bg, nil, nil); err != nil {
 		return fmt.Errorf("could not copy background: %v", err)
 	}
 
@@ -31,6 +33,6 @@ func (s *scene) paint(r *sdl.Renderer) error {
 	return nil
 }
 
-func (s *scene) destroy() {
-	s.bg.Destroy()
+func (s *Scene) destroy() {
+	s.Bg.Destroy()
 }

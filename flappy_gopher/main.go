@@ -42,7 +42,7 @@ func run() error {
 
 	time.Sleep(5 * time.Second)
 
-	s, err := newScene(r)
+	s, err := NewScene(r)
 	if err != nil {
 		return fmt.Errorf("could not draw background: %v", err)
 	}
