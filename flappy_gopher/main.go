@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
@@ -25,13 +24,13 @@ func main() {
 }
 
 func run() error {
-	err := sdl.Init(sdl.INIT_EVERYTHING)
-	if err != nil {
+
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		return fmt.Errorf("could not initialize SDL: %v", err)
 	}
 	defer sdl.Quit()
 
-	if err = ttf.Init(); err != nil {
+	if err := ttf.Init(); err != nil {
 		return fmt.Errorf("Could not initialize ttf: %v", err)
 	}
 	defer ttf.Quit()
@@ -43,7 +42,7 @@ func run() error {
 	}
 	defer w.Destroy() //shall destroy window and renderer
 
-	if err := drawTitle(r); err != nil {
+	if err = drawTitle(r); err != nil {
 		return fmt.Errorf("could not draw title: %v", err)
 	}
 
@@ -55,19 +54,18 @@ func run() error {
 	}
 	defer s.Destroy()
 
-	//quit := make(chan struct{})
-	//defer close(quit)
+	events := make(chan sdl.Event)
+	errc := s.Run(events, r)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	runtime.LockOSThread()
+	for {
+		select {
+		case events <- sdl.WaitEvent():
+		case err := <-errc:
+			return err
 
-	select {
-	case err := <-s.Run(ctx, r):
-		return fmt.Errorf("could not paint scene: %v", err)
-	case <-time.After(5 * time.Second):
-		return nil
+		}
 	}
-
 }
 
 func drawTitle(r *sdl.Renderer) error {
