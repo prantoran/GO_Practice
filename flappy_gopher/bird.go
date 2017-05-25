@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	img "github.com/veandco/go-sdl2/sdl_image"
 
@@ -14,9 +15,13 @@ const (
 )
 
 type bird struct {
-	textures []*sdl.Texture
+	mu sync.RWMutex
+
 	time     int
+	textures []*sdl.Texture
+
 	y, speed float64
+	dead     bool
 }
 
 func newBird(r *sdl.Renderer) (*bird, error) {
@@ -33,16 +38,28 @@ func newBird(r *sdl.Renderer) (*bird, error) {
 	return &bird{textures: textures, y: 300, speed: 0}, nil
 }
 
-func (b *bird) paint(r *sdl.Renderer) error {
+func (b *bird) update() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.time++
 	b.y += b.speed
-
 	if b.y > 600 {
+		b.dead = true
 		b.speed = -0.8 * b.speed
 		b.y = 600
 	}
-
 	b.speed += gravity
+}
+
+func (b *bird) isDead() bool {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.dead
+}
+
+func (b *bird) paint(r *sdl.Renderer) error {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 
 	i := (b.time / 10) % len(b.textures)
 	//W,H are the dimensions of the bird_frame
@@ -53,12 +70,27 @@ func (b *bird) paint(r *sdl.Renderer) error {
 	return nil
 }
 
+func (b *bird) restart() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.y = 300
+	b.speed = 0
+	b.dead = false
+}
+
 func (b *bird) destroy() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	for _, t := range b.textures {
 		t.Destroy()
 	}
 }
 
 func (b *bird) jump() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	b.speed = jumpSpeed
 }

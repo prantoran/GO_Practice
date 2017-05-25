@@ -13,6 +13,7 @@ import (
 type Scene struct {
 	Bg   *sdl.Texture
 	bird *bird
+	pipe *pipe
 }
 
 //NewScene returns a scene structure by loading a background png and assigning the texture to the scene
@@ -27,7 +28,11 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 		return nil, err
 	}
 
-	return &Scene{Bg: bg, bird: b}, nil
+	p, err := newPipe(r)
+	if err != nil {
+		return nil, err
+	}
+	return &Scene{Bg: bg, bird: b, pipe: p}, nil
 }
 
 //Run implements the process of continuously calling paint()
@@ -44,6 +49,12 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 					return
 				}
 			case <-tick:
+				s.Update()
+				if s.bird.isDead() {
+					drawTitle(r, "Game Over")
+					time.Sleep(time.Second)
+					s.Restart()
+				}
 				if err := s.Paint(r); err != nil {
 					errc <- err
 				}
@@ -66,15 +77,28 @@ func (s *Scene) handleEvent(event sdl.Event) bool {
 	return false
 }
 
+//Update updates the bird's y axis
+func (s *Scene) Update() {
+	s.bird.update()
+	s.pipe.update()
+}
+
+//Restart the scene
+func (s *Scene) Restart() {
+	s.bird.restart()
+	s.pipe.restart()
+}
+
 //Paint paints the scene into Renderer r
 func (s *Scene) Paint(r *sdl.Renderer) error {
 	r.Clear()
-
 	if err := r.Copy(s.Bg, nil, nil); err != nil {
 		return fmt.Errorf("could not copy background: %v", err)
 	}
-
 	if err := s.bird.paint(r); err != nil {
+		return err
+	}
+	if err := s.pipe.paint(r); err != nil {
 		return err
 	}
 	r.Present()
@@ -84,4 +108,6 @@ func (s *Scene) Paint(r *sdl.Renderer) error {
 //Destroy of Scene s
 func (s *Scene) Destroy() {
 	s.Bg.Destroy()
+	s.bird.destroy()
+	s.pipe.destroy()
 }

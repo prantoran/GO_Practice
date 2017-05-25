@@ -42,7 +42,7 @@ func run() error {
 	}
 	defer w.Destroy() //shall destroy window and renderer
 
-	if err = drawTitle(r); err != nil {
+	if err = drawTitle(r, "intro"); err != nil {
 		return fmt.Errorf("could not draw title: %v", err)
 	}
 
@@ -68,33 +68,59 @@ func run() error {
 	}
 }
 
-func drawTitle(r *sdl.Renderer) error {
+func drawTitle(r *sdl.Renderer, text string) error {
 	r.Clear()
+	if text == "intro" {
+		f, err := ttf.OpenFont("res/fonts/flappy.ttf", 20)
+		if err != nil {
+			return fmt.Errorf("could not load font: %v", err)
+		}
+		defer f.Close()
 
-	f, err := ttf.OpenFont("res/fonts/flappy.ttf", 20)
-	if err != nil {
-		return fmt.Errorf("could not load font: %v", err)
+		c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
+		//s = surface
+		s, err := f.RenderUTF8_Solid("flappy gopher", c)
+		if err != nil {
+			return fmt.Errorf("could not render title: %v", err)
+		}
+		defer s.Free()
+
+		t, err := r.CreateTextureFromSurface(s)
+		if err != nil {
+			return fmt.Errorf("could not create texture: %v", err)
+		}
+		defer t.Destroy()
+
+		if err := r.Copy(t, nil, nil); err != nil {
+			return fmt.Errorf("could not copy texture: %v", err)
+		}
+		r.Present()
 	}
-	defer f.Close()
+	if text == "Game Over" {
+		f, err := ttf.OpenFont("res/fonts/flappy.ttf", 20)
+		if err != nil {
+			return fmt.Errorf("could not load font: %v", err)
+		}
+		defer f.Close()
 
-	c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
-	//s = surface
-	s, err := f.RenderUTF8_Solid("flappy gopher", c)
-	if err != nil {
-		return fmt.Errorf("could not render title: %v", err)
+		c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
+		//s = surface
+		s, err := f.RenderUTF8_Solid("flappy gopher", c)
+		if err != nil {
+			return fmt.Errorf("could not render title: %v", err)
+		}
+		defer s.Free()
+
+		t, err := r.CreateTextureFromSurface(s)
+		if err != nil {
+			return fmt.Errorf("could not create texture: %v", err)
+		}
+		defer t.Destroy()
+
+		if err := r.Copy(t, nil, nil); err != nil {
+			return fmt.Errorf("could not copy texture: %v", err)
+		}
+		r.Present()
 	}
-	defer s.Free()
-
-	t, err := r.CreateTextureFromSurface(s)
-	if err != nil {
-		return fmt.Errorf("could not create texture: %v", err)
-	}
-	defer t.Destroy()
-
-	if err := r.Copy(t, nil, nil); err != nil {
-		return fmt.Errorf("could not copy texture: %v", err)
-	}
-	r.Present()
-
 	return nil
 }
