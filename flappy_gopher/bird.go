@@ -20,8 +20,10 @@ type bird struct {
 	time     int
 	textures []*sdl.Texture
 
-	y, speed float64
-	dead     bool
+	x, y  int32
+	w, h  int32
+	speed float64
+	dead  bool
 }
 
 func newBird(r *sdl.Renderer) (*bird, error) {
@@ -35,14 +37,14 @@ func newBird(r *sdl.Renderer) (*bird, error) {
 		textures = append(textures, texture)
 
 	}
-	return &bird{textures: textures, y: 300, speed: 0}, nil
+	return &bird{textures: textures, x: 10, y: 300, w: 50, h: 43, speed: 0}, nil
 }
 
 func (b *bird) update() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.time++
-	b.y += b.speed
+	b.y += int32(b.speed)
 	if b.y > 600 {
 		b.dead = true
 		b.speed = -0.8 * b.speed
@@ -63,7 +65,7 @@ func (b *bird) paint(r *sdl.Renderer) error {
 
 	i := (b.time / 10) % len(b.textures)
 	//W,H are the dimensions of the bird_frame
-	rect := &sdl.Rect{X: 10, Y: int32(b.y) - 43/2, W: 50, H: 43}
+	rect := &sdl.Rect{X: 10, Y: b.y - b.h/2, W: b.w, H: b.h}
 	if err := r.Copy(b.textures[i], nil, rect); err != nil {
 		return fmt.Errorf("could not copy bird frame: %v", err)
 	}
@@ -74,7 +76,10 @@ func (b *bird) restart() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	b.x = 10
 	b.y = 300
+	b.w = 50
+	b.h = 43
 	b.speed = 0
 	b.dead = false
 }
@@ -93,4 +98,23 @@ func (b *bird) jump() {
 	defer b.mu.Unlock()
 
 	b.speed = jumpSpeed
+}
+
+func (b *bird) touch(p *pipe) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.x > b.x+b.w {
+		return
+	}
+	if p.x+p.w < b.x {
+		return
+	}
+	if p.h < b.y-b.h/2 {
+		return
+	}
+	b.dead = true
 }

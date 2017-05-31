@@ -81,6 +81,7 @@ func (s *Scene) handleEvent(event sdl.Event) bool {
 func (s *Scene) Update() {
 	s.bird.update()
 	s.pipe.update()
+	s.bird.touch(s.pipe)
 }
 
 //Restart the scene
